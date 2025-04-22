@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Typing Monster Game</title>
+  <style>
+    body { font-family: monospace; text-align: center; background: #111; color: white; }
+    #monster { font-size: 2em; margin: 30px; }
+    input { font-size: 1.5em; }
+
+    /* Popup Style */
+    #game-over {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      color: white;
+      font-size: 2em;
+      z-index: 1000;
+    }
+
+    #restart-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Typing Monster</h1>
+  <div>Level: <span id="level">1</span></div>
+  <div>Score: <span id="score">0</span></div>
+  <div>⏱ Time left: <span id="timer">60</span>s</div>
+  <div id="monster">cat</div>
+  <input type="text" id="input" autofocus />
+  <p id="result"></p>
+
+  <!-- Popup Game Over -->
+  <div id="game-over">
+    <div>💀 Game Over!</div>
+    <div id="final-score"></div>
+    <div id="wpm-display"></div> 
+    <button id="restart-btn">🔁 Restart Game</button>
+  </div>
+
+  <p id="start-hint">เริ่มพิมพ์เพื่อเริ่มเกม...</p>
+
+  <script>
+    const levels = {
+      1: ["cat", "dog", "sun", "mom", "dad", "run", "fun", "hat", "bed", "red",
+          "box", "pen", "cup", "bag", "leg", "man", "fan", "car", "toy", "map",
+          "bat", "pig", "fox", "top", "lip", "jam", "cap", "net", "bug", "sky",
+          "cow", "hen", "mat", "pan", "pot", "ant", "web", "egg", "zoo", "zip",
+          "win", "hop", "mix", "hit", "rug", "jar", "mud", "nut", "wig", "van"],
+
+      2: ["table", "chair", "phone", "spoon", "plate", "fork", "lamp", "door", "room", "bed",
+          "couch", "sofa", "fan", "light", "bulb", "stove", "fridge", "freezer", "clock", "frame",
+          "mirror", "towel", "brush", "comb", "bin", "cup", "mug", "kettle", "pan", "oven",
+          "sink", "mat", "floor", "wall", "drawer", "shelf", "curtain", "pillow", "blanket", "basket",
+          "remote", "charger", "switch", "plug", "soap", "tissue", "bowl", "scissors", "hanger", "mat"],
+
+      3: ["run", "walk", "read", "write", "eat", "jump", "talk", "look", "make", "play",
+          "sit", "stand", "sleep", "clean", "wash", "cook", "drink", "draw", "ride", "smile",
+          "think", "cry", "drive", "fix", "climb", "open", "close", "fold", "send", "bring",
+          "carry", "build", "break", "catch", "dance", "sing", "shout", "listen", "pick", "help",
+          "paint", "push", "pull", "throw", "wave", "type", "buy", "sell", "rest", "wait"],
+
+      4: ["email", "report", "laptop", "file", "desk", "chair", "office", "screen", "mouse", "keyboard",
+          "pen", "note", "meeting", "project", "folder", "printer", "scan", "copy", "submit", "deadline",
+          "schedule", "boss", "team", "call", "chat", "plan", "brief", "client", "server", "log",
+          "task", "work", "review", "sign", "paper", "chart", "file", "whiteboard", "doc", "memo",
+          "draft", "update", "goal", "status", "budget", "lead", "revise", "access", "share", "zoom"],
+
+      5: ["okay", "hello", "thanks", "sorry", "sure", "cool", "yeah", "nope", "brb", "ttyl",
+          "lol", "omg", "idk", "btw", "pls", "u", "cya", "np", "gtg", "omg",
+          "yup", "yay", "hehe", "haha", "hey", "hi", "welcome", "congrats", "awesome", "chill",
+          "wait", "done", "good", "bad", "same", "right", "left", "soon", "late", "back",
+          "funny", "wow", "huh", "send", "reply", "seen", "miss", "ping", "quick", "text"],
+
+      6: ["meeting", "project", "update", "task", "summary", "progress", "note", "report", "file", "brief",
+          "draft", "email", "approve", "send", "revise", "budget", "plan", "schedule", "deadline", "attach",
+          "review", "confirm", "feedback", "discuss", "edit", "check", "prepare", "allocate", "goal", "timeline",
+          "submit", "remind", "issue", "status", "resource", "estimate", "target", "assign", "comment", "finalize",
+          "track", "lead", "organize", "action", "priority", "outline", "share", "sync", "topic", "request"],
+
+      7: ["code", "server", "debug", "commit", "deploy", "push", "pull", "merge", "clone", "branch",
+          "repo", "terminal", "script", "build", "test", "bug", "loop", "array", "object", "class",
+          "function", "import", "export", "module", "syntax", "error", "query", "param", "config", "token",
+          "json", "api", "version", "database", "client", "cache", "auth", "hook", "log", "node",
+          "stack", "cloud", "docker", "yarn", "npm", "render", "props", "state", "event", "route"],
+
+      8: ["breakfast", "dinner", "coffee", "wallet", "shoes", "shirt", "pants", "phone", "keys", "lunch",
+          "watch", "bag", "glass", "book", "snack", "market", "mall", "train", "car", "walk",
+          "bottle", "charger", "fan", "weather", "park", "friend", "shop", "movie", "series", "work",
+          "water", "towel", "soap", "comb", "mirror", "brush", "card", "cash", "travel", "ticket",
+          "bike", "sleep", "music", "bed", "gym", "late", "street", "taxi", "mask", "drink"],
+
+      9: ["happy", "angry", "excited", "bored", "sad", "nervous", "scared", "tired", "relaxed", "calm",
+          "joyful", "upset", "worried", "shy", "lonely", "anxious", "surprised", "moody", "jealous", "peaceful",
+          "friendly", "hopeful", "grateful", "confused", "amazed", "curious", "proud", "guilty", "bitter", "cheerful",
+          "serious", "playful", "lazy", "sleepy", "lively", "awkward", "brave", "strong", "weak", "quiet",
+          "stressed", "crazy", "caring", "loving", "sweet", "mean", "rude", "polite", "fun", "angry"],
+
+      10: ["economy", "trending", "justice", "policy", "news", "protest", "crisis", "report", "statement", "update",
+           "global", "social", "virus", "climate", "alert", "media", "fake", "truth", "scandal", "health",
+           "leader", "nation", "freedom", "rights", "law", "vote", "power", "war", "peace", "market",
+           "finance", "inflation", "tax", "income", "stock", "debt", "budget", "reform", "growth", "risk",
+           "interview", "decision", "speech", "press", "agency", "research", "event", "impact", "discuss", "source"]
+    };
+
+
+    let level = 1;
+    let score = 0;
+    let timeLeft = 60;
+    let timerInterval;
+    let totalCharsTyped = 0;
+    let timerStarted = false;
+    
+    const wpmDisplay = document.getElementById("wpm-display");
+    const input = document.getElementById("input");
+    const monster = document.getElementById("monster");
+    const levelDisplay = document.getElementById("level");
+    const scoreDisplay = document.getElementById("score");
+    const timerDisplay = document.getElementById("timer");
+    const result = document.getElementById("result");
+    const gameOverPopup = document.getElementById("game-over");
+    const restartBtn = document.getElementById("restart-btn");
+
+
+    function getRandomWord() {
+      const words = levels[level] || levels[10];
+      return words[Math.floor(Math.random() * words.length)];
+    }
+
+    function nextWord() {
+      const newWord = getRandomWord();
+      monster.innerText = newWord;
+    }
+
+    function startTimer() {
+      clearInterval(timerInterval);
+      timeLeft = 60;
+      timerDisplay.innerText = timeLeft;
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        timerDisplay.innerText = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          showGameOver();
+        }
+      }, 1000);
+    }
+
+    const finalScore = document.getElementById("final-score");
+
+    function showGameOver() {
+      input.disabled = true;
+      input.value = "";
+      result.innerText = "💀 Time's up!";
+      finalScore.innerText = `You scored ${score} point${score !== 1 ? "s" : ""}!`;
+
+      const minutes = 60 / 60; // ถ้าเล่นเต็ม 60 วิ
+      const wpm = Math.round((totalCharsTyped / 5) / minutes);
+      wpmDisplay.innerText = `⌨️ Typing Speed: ${wpm} WPM`;
+
+      gameOverPopup.style.display = "flex";
+    }
+
+    function restartGame() {
+      // Reset all values
+      level = 1;
+      score = 0;
+      levelDisplay.innerText = level;
+      scoreDisplay.innerText = score;
+      input.disabled = false;
+      input.value = "";
+      result.innerText = "";
+      gameOverPopup.style.display = "none";
+      nextWord();
+      startTimer();
+    }
+
+    input.addEventListener("input", () => {
+      if (!timerStarted) {
+        document.getElementById("start-hint").style.display = "none";
+        startTimer();
+        timerStarted = true;
+      }
+
+      if (input.value === monster.innerText) {
+        totalCharsTyped += monster.innerText.length;
+        score++;
+        if (score % 5 === 0 && level < 10) level++;
+        levelDisplay.innerText = level;
+        scoreDisplay.innerText = score;
+        result.innerText = "✅ Defeated!";
+        input.value = "";
+        nextWord();
+      }
+    });
+
+    restartBtn.addEventListener("click", restartGame);
+
+    // เริ่มเกมครั้งแรก
+    nextWord();
+
+  </script>
+</body>
+</html>
